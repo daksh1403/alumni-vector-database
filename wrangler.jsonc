@@ -1,0 +1,1 @@
+{"$schema":"node_modules/wrangler/config-schema.json","name":"alumni-vector-console","main":"src/worker.js","compatibility_date":"2026-10-19","observability":{"enabled":true},"vars":{"QDRANT_COLLECTION":"alumni_network_v1","EMBEDDING_MODEL":"sentence-transformers/all-minilm-l6-v2"}}

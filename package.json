@@ -1,0 +1,20 @@
+{
+  "name": "alumni-vector-database",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "dev": "wrangler dev",
+    "deploy:api": "wrangler deploy",
+    "deploy:site": "node scripts/deploy-site.js",
+    "seed": "node --env-file=.dev.vars scripts/seed.js",
+    "evaluate": "node --env-file=.dev.vars scripts/evaluate.js"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.1"
+  }
+}
