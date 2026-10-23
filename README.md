@@ -267,15 +267,107 @@ An existing Neo4j instance is not required to run the synthetic demonstration. D
 
 | Method | Endpoint | Purpose | Access |
 | --- | --- | --- | --- |
-| GET | `/api/health` | Check collection connectivity | Public |
+| GET | `/api/health` | Application and Qdrant readiness check | Public |
+| POST | `/api/mentors/search` | Semantic alumni mentor search with domain/city filtering | Public |
+| GET | `/api/mentors` | Read-only mentor discovery and profile listing | Public |
+| GET | `/api/mentors/:uuid` | Read an individual mentor profile | Public |
+| GET | `/api/jobs` | Read-only job and opportunity listing | Public |
+| GET | `/api/jobs/:uuid` | Read an individual job opportunity | Public |
+| POST | `/api/search` | General hybrid search across all network kinds | Public |
 | GET | `/api/stats` | Read collection and category counts | Public |
 | GET | `/api/facets` | Read available filter values | Public |
-| POST | `/api/search` | Run hybrid search | Public |
 | GET | `/api/records` | Browse up to five records per page | Public |
 | GET | `/api/records/:uuid` | Read a record and its references | Public |
 | POST | `/api/records` | Create and index a record | Admin token |
 | PUT | `/api/records/:uuid` | Replace editable fields and regenerate vectors | Admin token |
 | DELETE | `/api/records/:uuid` | Delete an unconnected record | Admin token |
+
+### Semantic mentor search request
+
+`POST /api/mentors/search`
+
+Request body:
+
+```json
+{
+  "query": "I want a mentor experienced in machine learning",
+  "domain": "Artificial Intelligence",
+  "city": "Chennai",
+  "limit": 5
+}
+```
+
+Response body (`200 OK`):
+
+```json
+{
+  "results": [
+    {
+      "id": "synthetic-v1:alumni:0",
+      "name": "Ananya Rao",
+      "role": "Machine Learning Specialist",
+      "skills": ["Python", "Machine Learning", "Pytorch"],
+      "city": "Chennai",
+      "match_reason": "Relevant experience in machine learning",
+      "score": 0.01639
+    }
+  ]
+}
+```
+
+- **Query validation:** `query` must be a non-empty string between 1 and 1000 characters after trimming. Missing or whitespace-only queries return `400 Bad Request`.
+- **Filters:** `domain` and `city` are optional strings (max 100 characters). Domain names like `"Artificial Intelligence"` or `"Computer Science"` map to the relevant department code (`cse`). City names are normalized for Qdrant location filtering.
+- **Limits:** `limit` is an optional integer (default 5, capped at 5). Non-integer or negative limits return `400 Bad Request`.
+- **No matches:** Returns `{ "results": [] }` with `200 OK`.
+- **Score:** The `score` field is included when returned by the vector search service (e.g. reciprocal rank fusion score); demo scores are never fabricated.
+
+### Mentor profile discovery
+
+- `GET /api/mentors?city=chennai&domain=cse&limit=5`: List mentors matching location, domain, or skill metadata.
+- `GET /api/mentors/:uuid`: Returns `{ "mentor": { ... }, "record": { ... } }` for an individual mentor, or `404 Not Found` if missing.
+
+### Job opportunity endpoints
+
+- `GET /api/jobs?department=cse&location=chennai`: List job opportunities with optional filtering.
+- `GET /api/jobs/:uuid`: Retrieve an individual job record by ID. Returns `404 Not Found` if the record does not exist or is not a job.
+
+### Health and readiness
+
+`GET /api/health`
+
+Distinguishes application availability from Qdrant database readiness:
+
+- When healthy (`200 OK`):
+  ```json
+  {
+    "ok": true,
+    "status": "healthy",
+    "app": "available",
+    "database": {
+      "connected": true,
+      "engine": "Qdrant",
+      "collection": "alumni_network_v1",
+      "points": 101
+    },
+    "engine": "Qdrant",
+    "points": 101,
+    "model": "MiniLM + BM25"
+  }
+  ```
+- When Qdrant is unavailable or unconfigured (`503 Service Unavailable`):
+  ```json
+  {
+    "ok": false,
+    "status": "degraded",
+    "app": "available",
+    "database": {
+      "connected": false,
+      "error": "The search service is temporarily unreachable."
+    },
+    "error": "The search service is temporarily unreachable."
+  }
+  ```
+
 
 ### Search request
 
@@ -358,32 +450,63 @@ Publishing code to GitHub does not automatically deploy the website. The include
 
 ## Testing and evaluation
 
-Run the backend tests and deployment check:
+### Automated unit tests
+
+Run the complete automated test suite locally:
 
 ```sh
 npm test
-npm run deploy:site -- --dry-run
 ```
 
-The suite contains 13 tests covering migration preservation, demo provenance, hybrid query construction, filters, result limits, transport authentication, metadata preservation and API validation. These checks run on GitHub pushes and pull requests.
+This runs 36 tests using Node.js's native test runner (`node:test`), covering:
 
-After configuring and seeding Qdrant, run:
+1. **Mentor API & Search (`tests/api.test.js`):**
+   - Valid mentor search with mapped results and optional relevance score.
+   - Request body validation: rejection of missing, empty, whitespace-only queries, wrong field types, invalid limits, and malformed JSON with `400 Bad Request`.
+   - Result limit validation and safe bounds enforcement.
+   - Successful zero-match search returning `{ "results": [] }`.
+   - Error isolation when Qdrant is unavailable or times out (`503 Service Unavailable`), verifying no internal credentials or stack traces leak.
+   - Read-only profile discovery and individual profile retrieval by ID (`GET /api/mentors`, `GET /api/mentors/:id`), including `404 Not Found` for nonexistent profiles.
+   - Job opportunity listing and retrieval (`GET /api/jobs`, `GET /api/jobs/:id`).
+   - Health check responses distinguishing app availability from database readiness (`200 OK` vs `503 Service Unavailable`).
+   - Consistency of response schemas, JSON headers, and HTTP status codes.
+
+2. **Frontend API Client (`tests/frontend-api.test.js`):**
+   - Typed fetch wrappers for search, mentors, jobs, health, stats, and facets.
+   - Client-side validation prior to network dispatch.
+   - Non-2xx HTTP error handling and user-friendly error extraction.
+   - Offline backend detection and timeout handling.
+
+3. **Core Worker, Search & Data (`tests/worker.test.js`, `tests/search.test.js`, `tests/data.test.js`):**
+   - Hybrid dense/sparse query construction and result capping.
+   - Qdrant transport security, manual redirects, and secret protection.
+   - Admin route bearer token authentication and record updates.
+
+> [!NOTE]
+> All unit tests (`npm test`) use deterministic, mocked service calls and **do not require live Qdrant credentials or network availability**.
+
+### Live Qdrant evaluation (Optional)
+
+When a live Qdrant Cloud cluster is configured in `.dev.vars`, you can verify live retrieval:
 
 ```sh
 npm run evaluate
 ```
 
-The evaluator sends ten curated topic queries, checks expected topics in the top three results, validates exact filtering and compares migrated payloads when the local dataset is available. It saves results to ignored `private/evaluation.json`. Its dataset count check expects the collection to match the seeded dataset, so use a dedicated demonstration collection when evaluating.
+The evaluator sends ten curated topic queries, checks expected topics in the top three results, validates exact filtering and compares migrated payloads when the local dataset is available.
 
-During the original implementation, all ten curated queries returned the intended topic first. The initial median backend time was 168 ms, with a maximum of 622 ms. These are historical measurements from a small developer-selected dataset, not an independent benchmark or a promise about current response time.
+Deployment dry run:
 
-Previous integration checks also exercised real Qdrant CRUD operations, authorization and connected-record protection. Browser checks covered search, filters, details, responsive layout, animation controls and reduced-motion behaviour. Private browser scripts and their screenshots are not included in this repository, and GitHub Actions does not run those live checks.
+```sh
+npm run deploy:site -- --dry-run
+```
 
 ## Project structure
 
 ```text
 alumni-vector-database/
 ├── .github/workflows/test.yml   # Automated backend checks
+├── .dev.vars                    # Local development secrets (ignored by Git)
 ├── .env.example                # Placeholder configuration only
 ├── .gitignore                  # Excludes secrets and private generated data
 ├── docs/
@@ -392,7 +515,9 @@ alumni-vector-database/
 ├── frontend/
 │   ├── index.html             # Complete website markup
 │   ├── vector.css             # Styling, responsiveness and animations
-│   ├── app.js                 # Search, filters, details and admin interactions
+│   ├── app.js                 # Search, filters, details and admin UI interactions
+│   ├── js/
+│   │   └── api.js             # Modular frontend API client with error & timeout handling
 │   └── fonts/                 # Self-hosted fonts and their license
 ├── scripts/
 │   ├── data.js                # Synthetic data and migration mapping
@@ -401,10 +526,21 @@ alumni-vector-database/
 │   ├── evaluate.js            # Live retrieval evaluation
 │   └── deploy-site.js         # Deploy frontend assets with the Worker
 ├── src/
-│   ├── worker.js              # HTTP routes and admin authorization
+│   ├── worker.js              # Cloudflare Worker entry point and route dispatcher
+│   ├── utils.js               # Shared JSON helpers, body parser, and token auth
 │   ├── qdrant.js              # Qdrant transport and model configuration
-│   └── search.js              # Validation, filters and hybrid search body
-├── tests/                     # Node.js unit tests
+│   ├── search.js              # Vector search service, query generation and filters
+│   └── routes/
+│       ├── health.js          # Health and readiness route handler
+│       ├── mentors.js         # Mentor search and read-only profile discovery
+│       ├── jobs.js            # Job and opportunity listing/filtering
+│       └── search.js          # General hybrid search endpoint
+├── tests/                     # Automated unit and API test suite
+│   ├── api.test.js            # 15 comprehensive endpoint and failure-path tests
+│   ├── frontend-api.test.js   # Frontend API client tests
+│   ├── worker.test.js         # Worker route and auth tests
+│   ├── search.test.js         # Hybrid search and transport tests
+│   └── data.test.js           # Dataset generation and migration tests
 ├── package.json
 ├── package-lock.json
 ├── wrangler.jsonc

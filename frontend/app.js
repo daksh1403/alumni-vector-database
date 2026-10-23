@@ -16,39 +16,19 @@ function el(tag, text, cls) {
   return n;
 }
 
-async function api(path, options = {}) {
-  let r;
+import {
+  api,
+  post,
+  searchMentors,
+  searchRecords,
+  getMentors,
+  getJobs,
+  getRecords,
+  getHealth,
+  getStats,
+  getFacets
+} from './js/api.js';
 
-  try {
-    r = await fetch('/api/' + path, options);
-  } catch {
-    throw Error('Could not connect to the database service. Backend may be offline or unreachable.');
-  }
-
-  let j;
-
-  try {
-    j = await r.json();
-  } catch {
-    throw Error('The service returned an unexpected response.');
-  }
-
-  if (!r.ok) throw Error(j.error || 'Request failed.');
-  return j;
-}
-
-function post(path, data, method = 'POST') {
-  const token = $('admin-token').value;
-
-  return api(path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: 'Bearer ' + token } : {})
-    },
-    body: JSON.stringify(data)
-  });
-}
 
 const provenance = p =>
   p.synthetic
@@ -129,7 +109,14 @@ function render(records, append = false) {
   }
 
   records.forEach((record, i) => {
-    const p = record.payload || {};
+    const p = record.payload || {
+      kind: 'alumni',
+      title: record.name ? `${record.name}${record.role ? ' · ' + record.role : ''}` : 'Untitled record',
+      description: record.match_reason || '',
+      skills: record.skills || [],
+      location: record.city || '',
+      synthetic: false
+    };
     const rank = state.browse ? null : i + 1;
     const card = el('article', undefined, 'result-card');
 
@@ -210,10 +197,20 @@ async function search(event) {
   $('result-info').textContent = 'Finding connections…';
 
   try {
-    const data = await post('search', {
-      query,
-      ...filterValues()
-    });
+    const f = filterValues();
+    let data;
+    if (state.kind === 'alumni') {
+      data = await searchMentors({
+        query,
+        ...(f.department ? { domain: f.department } : {}),
+        ...(f.location ? { city: f.location } : {})
+      });
+    } else {
+      data = await searchRecords({
+        query,
+        ...f
+      });
+    }
 
     const results = data.results || [];
     render(results);
@@ -303,7 +300,7 @@ async function browse(append = false) {
 
 async function refresh() {
   try {
-    const s = await api('stats');
+    const s = await getStats();
 
     $('connection').textContent = '● Connected';
     $('connection').classList.add('online');
@@ -318,7 +315,7 @@ async function refresh() {
 
     $('notice').hidden = true;
 
-    const f = await api('facets');
+    const f = await getFacets();
 
     for (const [id, key] of [
       ['department', 'department'],

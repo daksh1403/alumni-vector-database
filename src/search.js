@@ -1,5 +1,13 @@
-import {ApiError,model} from './qdrant.js';
+import {ApiError,model,collection,request} from './qdrant.js';
 export const kinds=['alumni','job','mentorship','student','department','batch','company','skill','event','donation'];
+
+export async function semanticSearch(env, input, fetcher = fetch) {
+  const base = '/collections/' + encodeURIComponent(collection(env));
+  const query = searchBody(input, env);
+  return request(env, base + '/points/query', 'POST', query, fetcher);
+}
+export const semantic_search = semanticSearch;
+
 export function filters(input={}){const must=[];for(const field of ['kind','department','skill','location']){if(input[field]===undefined||input[field]==='')continue;const v=input[field];if(typeof v!=='string'||v.length>100)throw new ApiError('Invalid filter.',400);if(field==='kind'&&!kinds.includes(v))throw new ApiError('Invalid kind filter.',400);must.push({key:field==='skill'?'skills':field,match:{value:v.toLowerCase().trim()}});}if(input.synthetic!==undefined){if(typeof input.synthetic!=='boolean')throw new ApiError('Invalid synthetic filter.',400);must.push({key:'synthetic',match:{value:input.synthetic}});}return must.length?{must}:undefined;}
 export function searchBody(input,env={}){
  if(!input||Object.keys(input).some(k=>!['query','kind','department','skill','location','synthetic','limit'].includes(k)))throw new ApiError('Unknown search filter.',400);
