@@ -49,3 +49,63 @@ test("sample records keep provenance without demo wording in searchable text", (
     );
   }
 });
+
+test("every alumnus has a unique name even when source data uses a sample name", () => {
+  const rows = m.buildDataset({
+    nodes: [
+      {
+        label: "Alumni",
+        key: { AlumniID: 1 },
+        properties: { AlumniID: 1, FirstName: "Ananya", LastName: "Rao" },
+      },
+    ],
+    relationships: [],
+  });
+  const alumni = rows.filter((row) => row.payload.kind === "alumni");
+  const names = alumni.map((row) =>
+    row.payload.title.split(" · ")[0].trim().toLowerCase(),
+  );
+  assert.equal(alumni.length, 50);
+  assert.equal(new Set(names).size, alumni.length);
+});
+
+test("sample titles describe people and mentoring tracks without numbered copies", () => {
+  const rows = m.buildDataset({ nodes: [], relationships: [] });
+  for (const { payload } of rows) assert.doesNotMatch(payload.title, /\s\d+$/);
+  assert.equal(
+    new Set(rows.map((row) => row.payload.kind + ":" + row.payload.title)).size,
+    rows.length,
+  );
+});
+
+test("batches in the same year show their department and section", () => {
+  const rows = m.buildDataset({
+    nodes: [
+      {
+        label: "Department",
+        key: { DeptID: 10 },
+        properties: {
+          DeptID: 10,
+          DeptCode: "cse",
+          DeptName: "Computer Science",
+        },
+      },
+      {
+        label: "Batch",
+        key: { BatchID: 2 },
+        properties: { BatchID: 2, BatchYear: 2020, DeptID: 10, Section: "A" },
+      },
+      {
+        label: "Batch",
+        key: { BatchID: 3 },
+        properties: { BatchID: 3, BatchYear: 2020, DeptID: 10, Section: "B" },
+      },
+    ],
+    relationships: [],
+  });
+  const batches = rows.filter((row) => row.payload.kind === "batch");
+  assert.deepEqual(
+    batches.map((row) => row.payload.title),
+    ["Batch 2020 · CSE · Section A", "Batch 2020 · CSE · Section B"],
+  );
+});

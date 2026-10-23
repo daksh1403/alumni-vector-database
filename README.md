@@ -239,6 +239,8 @@ npm run seed
 
 The script creates the collection if it is missing, creates payload indexes and uploads records in batches. It writes the generated dataset to ignored `private/dataset.json`.
 
+Sample alumni have unique names, including checks against imported alumni names. Mentoring records use Beginner or Capstone track titles. Batch titles include department and section where available.
+
 Repeated seeding uses stable IDs and upserts the same seeded points. It does not delete the collection or unrelated points, but it can replace edits to matching seeded records. Keep a backup before reseeding data that has been edited.
 
 ### 5. Start the complete website
@@ -364,7 +366,7 @@ npm exec -- playwright install chromium
 npm run check
 ```
 
-`npm run check` runs 16 backend tests, 10 browser tests and a complete deployment dry run. For individual checks, use `npm test`, `npm run test:ui` or `npm run deploy -- --dry-run`.
+`npm run check` runs 19 backend tests, 10 browser tests and a complete deployment dry run. For individual checks, use `npm test`, `npm run test:ui` or `npm run deploy -- --dry-run`.
 
 Backend tests cover migration preservation, demo provenance, hybrid query construction, filters, result limits, database configuration, record IDs, transport authentication, metadata preservation and API validation.
 

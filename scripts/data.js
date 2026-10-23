@@ -98,6 +98,18 @@ export function buildDataset(graph = { nodes: [], relationships: [] }) {
       .filter((r) => identity(r.from) === key)
       .map((r) => byKey.get(identity(r.to)))
       .filter(Boolean);
+    const batchDepartment = graph.nodes.find(
+      (row) => row.label === "Department" && row.properties.DeptID === p.DeptID,
+    )?.properties;
+    const batchTitle = p.BatchYear
+      ? [
+          `Batch ${p.BatchYear}`,
+          batchDepartment?.DeptCode?.toUpperCase() || batchDepartment?.DeptName,
+          p.Section ? `Section ${p.Section}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : null;
     const title =
       [p.FirstName, p.LastName].filter(Boolean).join(" ") ||
       p.CompanyName ||
@@ -105,7 +117,7 @@ export function buildDataset(graph = { nodes: [], relationships: [] }) {
       p.DeptName ||
       p.EventName ||
       p.JobTitle ||
-      (p.BatchYear ? "Batch " + p.BatchYear : null) ||
+      batchTitle ||
       (p.MentorshipID ? "Mentorship " + p.MentorshipID : null) ||
       (p.Amount ? "Donation " + p.DonationID : null) ||
       n.label;
@@ -149,6 +161,11 @@ export function buildDataset(graph = { nodes: [], relationships: [] }) {
     };
     out.push({ id: uuid(key), payload });
   }
+  const existingNames = new Set(
+    out
+      .filter((row) => row.payload.kind === "alumni")
+      .map((row) => row.payload.title.split(" · ")[0].trim().toLowerCase()),
+  );
   const names = [
     "Ananya Rao",
     "Rohan Nair",
@@ -160,7 +177,47 @@ export function buildDataset(graph = { nodes: [], relationships: [] }) {
     "Varun Das",
     "Isha Kapoor",
     "Sahil Joshi",
-  ];
+    "Aarav Mehta",
+    "Diya Malhotra",
+    "Aditya Verma",
+    "Sneha Reddy",
+    "Karan Bhatia",
+    "Priya Desai",
+    "Vivek Saxena",
+    "Pooja Kulkarni",
+    "Neel Chopra",
+    "Riya Banerjee",
+    "Kabir Sethi",
+    "Tara Krishnan",
+    "Ayaan Gupta",
+    "Sanya Bose",
+    "Harsh Mishra",
+    "Aditi Jain",
+    "Rahul Pillai",
+    "Simran Kaur",
+    "Yash Trivedi",
+    "Avni Agarwal",
+    "Dhruv Sharma",
+    "Sara Thomas",
+    "Nikhil Bansal",
+    "Shreya Ghosh",
+    "Manav Arora",
+    "Anika Shetty",
+    "Pranav Dutta",
+    "Maya Fernandes",
+    "Akash Chaturvedi",
+    "Leena Chawla",
+    "Rishi Narayanan",
+    "Saumya Tandon",
+    "Om Prakash",
+    "Anushka Lal",
+    "Siddharth Das",
+    "Neha Sinha",
+    "Vihaan Joshi",
+    "Divya Raman",
+    "Ansh Singh",
+    "Kritika Kapoor",
+  ].filter((name) => !existingNames.has(name.toLowerCase()));
   const cities = ["bengaluru", "chennai", "hyderabad", "pune", "remote"];
   for (const [kind, total] of [
     ["alumni", 50],
@@ -174,10 +231,10 @@ export function buildDataset(graph = { nodes: [], relationships: [] }) {
         location = cities[(i + variant) % cities.length];
       const title =
         kind === "alumni"
-          ? `${names[i % names.length]} · ${topic} ${variant + 1}`
+          ? `${names[i]} · ${topic[0].toUpperCase() + topic.slice(1)}`
           : kind === "job"
             ? `${topic[0].toUpperCase() + topic.slice(1)} ${variant ? "engineer" : "intern"}`
-            : `${topic[0].toUpperCase() + topic.slice(1)} mentoring ${variant + 1}`;
+            : `${topic[0].toUpperCase() + topic.slice(1)} mentoring · ${variant ? "Capstone" : "Beginner"}`;
       const description =
         kind === "alumni"
           ? `Alumni profile. Specialist in ${topic}, with ${3 + variant * 2} years of experience ${focus}. Works with ${skills.join(", ")}. Offers practical mentoring, portfolio feedback and career guidance for students interested in ${topic}. Current project: ${["education", "healthcare", "sustainability", "retail", "public transport"][variant % 5]} technology. Based in ${location}.`
