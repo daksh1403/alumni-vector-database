@@ -52,7 +52,7 @@ function post(path, data, method = "POST") {
 
 const provenance = (p) =>
   p.synthetic
-    ? "Demo"
+    ? "Sample"
     : p.origin === "neo4j-migration"
       ? "Original record"
       : "Added record";

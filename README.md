@@ -54,7 +54,7 @@ The main focus of this version is **discovery through semantic and keyword searc
 - Create, edit and delete records through protected admin operations.
 - Generate updated embeddings when an admin saves a record.
 - Preserve original properties and connection references during Neo4j migration.
-- Clearly label synthetic records as Demo in the interface.
+- Clearly label synthetic records as Sample in the interface.
 - Use a responsive frontend with readable typography, an animated network visual, animation controls and reduced-motion support.
 
 ## Why I used Qdrant
@@ -147,8 +147,8 @@ Each point stores its vectors and a payload. The following is an illustrative pa
 ```json
 {
   "kind": "alumni",
-  "title": "Demo alumnus interested in machine learning",
-  "description": "Synthetic alumni profile offering guidance on Python and machine learning projects.",
+  "title": "Sample alumnus interested in machine learning",
+  "description": "Alumni profile offering guidance on Python and machine learning projects.",
   "skills": ["python", "machine learning"],
   "department": "cse",
   "location": "bengaluru",
@@ -183,7 +183,7 @@ These references preserve migration context, but they do not turn Qdrant into a 
 
 Private exports are not included in this repository. A fresh seed without the migration file creates **85 synthetic records**: 50 alumni, 20 jobs and 15 mentoring records. This allows another student to run the project without access to the original dataset.
 
-Demo alumni, jobs and mentoring records are learning examples. They do not represent verified people, vacancies or available mentoring sessions.
+Sample alumni, jobs and mentoring records are learning examples. They do not represent verified people, vacancies or available mentoring sessions.
 
 ## Using the website
 
@@ -316,8 +316,8 @@ Example request body:
 ```json
 {
   "kind": "mentorship",
-  "title": "Demo Python project mentoring",
-  "description": "Synthetic mentoring sessions focused on Python projects, debugging and practical portfolio feedback.",
+  "title": "Sample Python project mentoring",
+  "description": "Mentoring sessions focused on Python projects, debugging and practical portfolio feedback.",
   "skills": ["python", "debugging"],
   "department": "cse",
   "location": "remote",
@@ -364,7 +364,7 @@ npm exec -- playwright install chromium
 npm run check
 ```
 
-`npm run check` runs 15 backend tests, 9 browser tests and a complete deployment dry run. For individual checks, use `npm test`, `npm run test:ui` or `npm run deploy -- --dry-run`.
+`npm run check` runs 16 backend tests, 10 browser tests and a complete deployment dry run. For individual checks, use `npm test`, `npm run test:ui` or `npm run deploy -- --dry-run`.
 
 Backend tests cover migration preservation, demo provenance, hybrid query construction, filters, result limits, database configuration, record IDs, transport authentication, metadata preservation and API validation.
 

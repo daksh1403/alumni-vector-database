@@ -180,10 +180,10 @@ export function buildDataset(graph = { nodes: [], relationships: [] }) {
             : `${topic[0].toUpperCase() + topic.slice(1)} mentoring ${variant + 1}`;
       const description =
         kind === "alumni"
-          ? `Synthetic alumni profile. Specialist in ${topic}, with ${3 + variant * 2} years of experience ${focus}. Works with ${skills.join(", ")}. Offers practical mentoring, portfolio feedback and career guidance for students interested in ${topic}. Current project: ${["education", "healthcare", "sustainability", "retail", "public transport"][variant % 5]} technology. Based in ${location}.`
+          ? `Alumni profile. Specialist in ${topic}, with ${3 + variant * 2} years of experience ${focus}. Works with ${skills.join(", ")}. Offers practical mentoring, portfolio feedback and career guidance for students interested in ${topic}. Current project: ${["education", "healthcare", "sustainability", "retail", "public transport"][variant % 5]} technology. Based in ${location}.`
           : kind === "job"
-            ? `Synthetic job opportunity for a ${variant ? "professional" : "student"} interested in ${topic}. Responsibilities include ${focus}. Essential skills: ${skills.join(", ")}. ${variant ? "Two years of relevant experience preferred." : "Entry level internship with guided onboarding and a portfolio project."} Location: ${location}.`
-            : `Synthetic mentoring opportunity focused on ${topic}. Learn ${focus}. Sessions cover ${skills.join(", ")} through hands-on practice, project reviews and interview preparation. ${variant ? "Intermediate learning path for a capstone project." : "Beginner friendly learning path with weekly one-to-one guidance."} Sessions available in ${location}.`;
+            ? `Job opportunity for a ${variant ? "professional" : "student"} interested in ${topic}. Responsibilities include ${focus}. Essential skills: ${skills.join(", ")}. ${variant ? "Two years of relevant experience preferred." : "Entry level internship with guided onboarding and a portfolio project."} Location: ${location}.`
+            : `Mentoring opportunity focused on ${topic}. Learn ${focus}. Sessions cover ${skills.join(", ")} through hands-on practice, project reviews and interview preparation. ${variant ? "Intermediate learning path for a capstone project." : "Beginner friendly learning path with weekly one-to-one guidance."} Sessions available in ${location}.`;
       out.push({
         id: uuid("synthetic-v1:" + kind + ":" + i),
         payload: {

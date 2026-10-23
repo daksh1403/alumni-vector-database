@@ -38,3 +38,14 @@ test("migration preserves source properties and directed relationship references
   assert.equal(migrated[0].payload.relationships[0].target, migrated[1].id);
   assert.deepEqual(migrated[0].payload.skills, ["python"]);
 });
+
+test("sample records keep provenance without demo wording in searchable text", () => {
+  const records = m.buildDataset({ nodes: [], relationships: [] });
+  assert.ok(records.every((record) => record.payload.synthetic === true));
+  for (const { payload } of records) {
+    assert.doesNotMatch(
+      payload.title + " " + payload.description,
+      /\b(demo|synthetic)\b/i,
+    );
+  }
+});

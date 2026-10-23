@@ -234,3 +234,11 @@ test("mobile search, details and animation controls remain accessible", async ({
       .evaluate((el) => getComputedStyle(el).animationName),
   ).toBe("none");
 });
+
+test("sample records use plain labels without demo wording", async ({
+  page,
+}) => {
+  await search(page);
+  await expect(page.locator(".synthetic")).toHaveText("Sample");
+  await expect(page.locator("footer")).not.toContainText("Demo");
+});
