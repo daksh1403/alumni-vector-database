@@ -1,10 +1,120 @@
-import test from 'node:test';import assert from 'node:assert/strict';
-const m=await import('../src/search.js').catch(()=>({}));
-test('hybrid search binds input into inference objects and caps results',()=>{assert.equal(typeof m.searchBody,'function');const b=m.searchBody({query:'machine learning mentor',kind:'alumni',limit:100});assert.equal(b.limit,5);assert.equal(b.query.fusion,'rrf');assert.equal(b.prefetch[0].query.text,'machine learning mentor');assert.equal(b.prefetch[1].using,'bm25');assert.deepEqual(b.filter.must[0],{key:'kind',match:{value:'alumni'}});});
-test('invalid query and unsupported filter keys are rejected',()=>{assert.equal(typeof m.searchBody,'function');assert.throws(()=>m.searchBody({query:''}),/query/i);assert.throws(()=>m.searchBody({query:'x',kind:'arbitrary'}),/kind/i);assert.throws(()=>m.searchBody({query:'x',skills:['Python']}),/filter/i);});
-test('exact department and skill filters are forwarded to both retrieval paths',()=>{assert.equal(typeof m.searchBody,'function');const b=m.searchBody({query:'developer',department:'CSE',skill:'Python'});assert.deepEqual(b.prefetch[0].filter,b.filter);assert.deepEqual(b.prefetch[1].filter,b.filter);assert.ok(b.filter.must.some(f=>f.match.value==='python'));});
-const q=await import('../src/qdrant.js').catch(()=>({}));
-test('transport uses server-side key and manual redirects',async()=>{assert.equal(typeof q.request,'function');let options;const r=await q.request({QDRANT_URL:'https://cluster.example',QDRANT_API_KEY:'secret'},'/collections','GET',undefined,async(u,o)=>{options=o;return Response.json({status:'ok',result:{collections:[]}});});assert.equal(options.headers['api-key'],'secret');assert.equal(options.redirect,'manual');assert.deepEqual(r,{collections:[]});});
-test('database errors and missing configuration do not leak credentials',async()=>{assert.equal(typeof q.request,'function');await assert.rejects(q.request({},'/collections'),/configured/);await assert.rejects(q.request({QDRANT_URL:'https://cluster.example',QDRANT_API_KEY:'secret'},'/collections','GET',undefined,async()=>Response.json({status:{error:'secret internal error'}},{status:403})),e=>e.status===503&&!e.message.includes('secret'));});
-test('browse filter parser converts boolean URL parameters and rejects invalid values',async()=>{const {browseFilters}=await import('../src/search.js');assert.equal(typeof browseFilters,'function');assert.deepEqual(browseFilters(new URLSearchParams('kind=alumni&synthetic=true&offset=ignored')).must.at(-1),{key:'synthetic',match:{value:true}});assert.throws(()=>browseFilters(new URLSearchParams('synthetic=maybe')),/synthetic/i);});
-test('record updates preserve migration identities and references',async()=>{const{mergeRecord}=await import('../src/search.js');assert.equal(typeof mergeRecord,'function');const old={source_id:'Alumni:1',origin:'neo4j-migration',relationships:[{target:'id'}],source_properties:{AlumniID:1},title:'Old'};const updated=mergeRecord(old,{title:'New'});assert.equal(updated.source_id,old.source_id);assert.deepEqual(updated.relationships,old.relationships);assert.equal(updated.title,'New');});
+import test from "node:test";
+import assert from "node:assert/strict";
+import * as m from "../src/search.js";
+test("hybrid search binds input into inference objects and caps results", () => {
+  assert.equal(typeof m.searchBody, "function");
+  const b = m.searchBody({
+    query: "machine learning mentor",
+    kind: "alumni",
+    limit: 100,
+  });
+  assert.equal(b.limit, 5);
+  assert.equal(b.query.fusion, "rrf");
+  assert.equal(b.prefetch[0].query.text, "machine learning mentor");
+  assert.equal(b.prefetch[1].using, "bm25");
+  assert.deepEqual(b.filter.must[0], {
+    key: "kind",
+    match: { value: "alumni" },
+  });
+});
+test("invalid query and unsupported filter keys are rejected", () => {
+  assert.equal(typeof m.searchBody, "function");
+  assert.throws(() => m.searchBody({ query: "" }), /query/i);
+  assert.throws(() => m.searchBody({ query: "x", kind: "arbitrary" }), /kind/i);
+  assert.throws(
+    () => m.searchBody({ query: "x", skills: ["Python"] }),
+    /filter/i,
+  );
+});
+test("exact department and skill filters are forwarded to both retrieval paths", () => {
+  assert.equal(typeof m.searchBody, "function");
+  const b = m.searchBody({
+    query: "developer",
+    department: "CSE",
+    skill: "Python",
+  });
+  assert.deepEqual(b.prefetch[0].filter, b.filter);
+  assert.deepEqual(b.prefetch[1].filter, b.filter);
+  assert.ok(b.filter.must.some((f) => f.match.value === "python"));
+});
+import * as q from "../src/qdrant.js";
+test("transport uses server-side key and manual redirects", async () => {
+  assert.equal(typeof q.request, "function");
+  let options;
+  const r = await q.request(
+    { QDRANT_URL: "https://cluster.example", QDRANT_API_KEY: "secret" },
+    "/collections",
+    "GET",
+    undefined,
+    async (u, o) => {
+      options = o;
+      return Response.json({ status: "ok", result: { collections: [] } });
+    },
+  );
+  assert.equal(options.headers["api-key"], "secret");
+  assert.equal(options.redirect, "manual");
+  assert.deepEqual(r, { collections: [] });
+});
+test("database errors and missing configuration do not leak credentials", async () => {
+  assert.equal(typeof q.request, "function");
+  await assert.rejects(q.request({}, "/collections"), /configured/);
+  await assert.rejects(
+    q.request(
+      { QDRANT_URL: "https://cluster.example", QDRANT_API_KEY: "secret" },
+      "/collections",
+      "GET",
+      undefined,
+      async () =>
+        Response.json(
+          { status: { error: "secret internal error" } },
+          { status: 403 },
+        ),
+    ),
+    (e) => e.status === 503 && !e.message.includes("secret"),
+  );
+});
+test("browse filter parser converts boolean URL parameters and rejects invalid values", async () => {
+  const { browseFilters } = await import("../src/search.js");
+  assert.equal(typeof browseFilters, "function");
+  assert.deepEqual(
+    browseFilters(
+      new URLSearchParams("kind=alumni&synthetic=true&offset=ignored"),
+    ).must.at(-1),
+    { key: "synthetic", match: { value: true } },
+  );
+  assert.throws(
+    () => browseFilters(new URLSearchParams("synthetic=maybe")),
+    /synthetic/i,
+  );
+});
+test("record updates preserve migration identities and references", async () => {
+  const { mergeRecord } = await import("../src/search.js");
+  assert.equal(typeof mergeRecord, "function");
+  const old = {
+    source_id: "Alumni:1",
+    origin: "neo4j-migration",
+    relationships: [{ target: "id" }],
+    source_properties: { AlumniID: 1 },
+    title: "Old",
+  };
+  const updated = mergeRecord(old, { title: "New" });
+  assert.equal(updated.source_id, old.source_id);
+  assert.deepEqual(updated.relationships, old.relationships);
+  assert.equal(updated.title, "New");
+});
+
+test("invalid database origins return a configuration error", async () => {
+  for (const origin of [
+    "not a URL",
+    "https://cluster.example/#fragment",
+    "https://cluster.example/path",
+  ]) {
+    await assert.rejects(
+      q.request(
+        { QDRANT_URL: origin, QDRANT_API_KEY: "secret" },
+        "/collections",
+      ),
+      (error) => error.status === 503 && /origin/.test(error.message),
+    );
+  }
+});

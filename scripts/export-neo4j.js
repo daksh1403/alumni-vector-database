@@ -1,7 +1,85 @@
-import {writeFileSync,mkdirSync}from'node:fs';
-const identities={Alumni:['AlumniID'],Student:['StudentID'],Department:['DeptID'],Batch:['BatchID'],Company:['CompanyID'],Skill:['SkillID'],Event:['EventID'],Donation:['DonationID'],Job:['JobID'],Mentorship:['AlumniID','MentorshipID']};
-const url=new URL(process.env.NEO4J_URI.replace(/^neo4j\+s:/,'https:').replace(/^bolt\+s:/,'https:'));
-async function q(statement){const r=await fetch(url.origin+'/db/'+encodeURIComponent(process.env.NEO4J_DATABASE||'neo4j')+'/query/v2',{method:'POST',redirect:'manual',headers:{'Content-Type':'application/json',Authorization:'Basic '+Buffer.from(process.env.NEO4J_USERNAME+':'+process.env.NEO4J_PASSWORD).toString('base64')},body:JSON.stringify({statement})});const j=await r.json();if(!r.ok||j.errors?.length)throw Error('Neo4j export failed. Check private credentials.');return j.data.values;}
-const nodes=(await q('MATCH (n) RETURN elementId(n),labels(n),properties(n)')).map(([id,labels,properties])=>{const label=labels.find(l=>identities[l]);if(!label)throw Error('Unknown label; add identity mapping before migration.');return{id,label,key:Object.fromEntries(identities[label].map(k=>[k,properties[k]])),properties};});
-const map=new Map(nodes.map(n=>[n.id,n]));const relationships=(await q('MATCH (a)-[r]->(b) RETURN elementId(a),type(r),elementId(b),properties(r)')).map(([a,type,b,properties])=>({from:{label:map.get(a).label,key:map.get(a).key},type,to:{label:map.get(b).label,key:map.get(b).key},properties}));
-mkdirSync('private',{recursive:true});writeFileSync('private/migrated-graph.json',JSON.stringify({nodes:nodes.map(({id,...n})=>n),relationships},null,2),{mode:0o600});console.log('Exported',nodes.length,'entities and',relationships.length,'relationships.');
+import { writeFileSync, mkdirSync } from "node:fs";
+const identities = {
+  Alumni: ["AlumniID"],
+  Student: ["StudentID"],
+  Department: ["DeptID"],
+  Batch: ["BatchID"],
+  Company: ["CompanyID"],
+  Skill: ["SkillID"],
+  Event: ["EventID"],
+  Donation: ["DonationID"],
+  Job: ["JobID"],
+  Mentorship: ["AlumniID", "MentorshipID"],
+};
+const url = new URL(
+  process.env.NEO4J_URI.replace(/^neo4j\+s:/, "https:").replace(
+    /^bolt\+s:/,
+    "https:",
+  ),
+);
+async function q(statement) {
+  const r = await fetch(
+    url.origin +
+      "/db/" +
+      encodeURIComponent(process.env.NEO4J_DATABASE || "neo4j") +
+      "/query/v2",
+    {
+      method: "POST",
+      redirect: "manual",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic " +
+          Buffer.from(
+            process.env.NEO4J_USERNAME + ":" + process.env.NEO4J_PASSWORD,
+          ).toString("base64"),
+      },
+      body: JSON.stringify({ statement }),
+    },
+  );
+  const j = await r.json();
+  if (!r.ok || j.errors?.length)
+    throw Error("Neo4j export failed. Check private credentials.");
+  return j.data.values;
+}
+const nodes = (
+  await q("MATCH (n) RETURN elementId(n),labels(n),properties(n)")
+).map(([id, labels, properties]) => {
+  const label = labels.find((l) => identities[l]);
+  if (!label)
+    throw Error("Unknown label; add identity mapping before migration.");
+  return {
+    id,
+    label,
+    key: Object.fromEntries(identities[label].map((k) => [k, properties[k]])),
+    properties,
+  };
+});
+const map = new Map(nodes.map((n) => [n.id, n]));
+const relationships = (
+  await q(
+    "MATCH (a)-[r]->(b) RETURN elementId(a),type(r),elementId(b),properties(r)",
+  )
+).map(([a, type, b, properties]) => ({
+  from: { label: map.get(a).label, key: map.get(a).key },
+  type,
+  to: { label: map.get(b).label, key: map.get(b).key },
+  properties,
+}));
+mkdirSync("private", { recursive: true });
+writeFileSync(
+  "private/migrated-graph.json",
+  JSON.stringify(
+    { nodes: nodes.map(({ id, ...n }) => n), relationships },
+    null,
+    2,
+  ),
+  { mode: 0o600 },
+);
+console.log(
+  "Exported",
+  nodes.length,
+  "entities and",
+  relationships.length,
+  "relationships.",
+);

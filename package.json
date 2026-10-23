@@ -7,14 +7,16 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test tests/*.test.js",
     "dev": "wrangler dev",
-    "deploy:api": "wrangler deploy",
-    "deploy:site": "node scripts/deploy-site.js",
+    "deploy": "wrangler deploy",
+    "test": "node --test tests/*.test.js",
+    "test:ui": "playwright test",
+    "check": "npm test && npm run test:ui && wrangler deploy --dry-run",
     "seed": "node --env-file=.dev.vars scripts/seed.js",
     "evaluate": "node --env-file=.dev.vars scripts/evaluate.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "wrangler": "4.151.1"
   }
 }

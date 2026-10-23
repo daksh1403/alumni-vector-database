@@ -28,6 +28,7 @@ This repository includes the complete frontend, the Cloudflare Worker API, the Q
 - [Deploy to Cloudflare](#deploy-to-cloudflare)
 - [Testing and evaluation](#testing-and-evaluation)
 - [Project structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
 - [Security and data handling](#security-and-data-handling)
 - [Limitations](#limitations)
 - [Future improvements](#future-improvements)
@@ -62,14 +63,14 @@ Qdrant stores and searches numerical representations of information called vecto
 
 For this project, a query about "container orchestration" can be related to a profile mentioning Kubernetes. This is useful when students describe a goal rather than searching for an exact database value.
 
-| Requirement | How it is handled in this project |
-| --- | --- |
-| Find related ideas | Dense embeddings support semantic similarity search |
-| Keep specific terms relevant | BM25 sparse vectors support keyword retrieval |
-| Restrict matches to the right category | Payload filters apply to both retrieval paths |
+| Requirement                                     | How it is handled in this project                        |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| Find related ideas                              | Dense embeddings support semantic similarity search      |
+| Keep specific terms relevant                    | BM25 sparse vectors support keyword retrieval            |
+| Restrict matches to the right category          | Payload filters apply to both retrieval paths            |
 | Store profile details beside searchable vectors | Payloads contain descriptions, skills and other metadata |
-| Update searchable records | Upserts store the payload and newly generated vectors |
-| Connect a serverless application | The Worker calls Qdrant through its HTTPS API |
+| Update searchable records                       | Upserts store the payload and newly generated vectors    |
+| Connect a serverless application                | The Worker calls Qdrant through its HTTPS API            |
 
 A relational database is still suitable for structured records, joins and transactions. Qdrant suits this version because its main task is similarity-based discovery. I am not claiming that a vector database is better for every alumni management feature.
 
@@ -77,17 +78,17 @@ Qdrant does not execute SQL or Cypher. The application uses JavaScript and HTTPS
 
 ## Technology stack
 
-| Part | Technology | Purpose |
-| --- | --- | --- |
-| Frontend | HTML, CSS and JavaScript | Search interface, filters, record details and admin forms |
-| Typography | Self-hosted Manrope fonts and a Georgia heading accent | Readable text and a distinct visual style |
-| Backend | Cloudflare Workers | Request validation, API routes and access control |
-| Database | Qdrant Cloud | Vector storage, payload filtering and retrieval |
-| Dense model | `sentence-transformers/all-minilm-l6-v2` | 384-dimensional text embeddings |
-| Sparse model | `qdrant/bm25` | Keyword-based sparse retrieval |
-| Result fusion | Reciprocal Rank Fusion, or RRF | Combine dense and sparse result rankings |
-| Development and deployment | Node.js, npm and Wrangler | Local development, scripts and Cloudflare deployment |
-| Automated checks | Node.js test runner and GitHub Actions | Backend tests and deployment dry runs |
+| Part                       | Technology                                             | Purpose                                                   |
+| -------------------------- | ------------------------------------------------------ | --------------------------------------------------------- |
+| Frontend                   | HTML, CSS and JavaScript                               | Search interface, filters, record details and admin forms |
+| Typography                 | Self-hosted Manrope fonts and a Georgia heading accent | Readable text and a distinct visual style                 |
+| Backend                    | Cloudflare Workers                                     | Request validation, API routes and access control         |
+| Database                   | Qdrant Cloud                                           | Vector storage, payload filtering and retrieval           |
+| Dense model                | `sentence-transformers/all-minilm-l6-v2`               | 384-dimensional text embeddings                           |
+| Sparse model               | `qdrant/bm25`                                          | Keyword-based sparse retrieval                            |
+| Result fusion              | Reciprocal Rank Fusion, or RRF                         | Combine dense and sparse result rankings                  |
+| Development and deployment | Node.js, npm and Wrangler                              | Local development, scripts and Cloudflare deployment      |
+| Automated checks           | Node.js test runner and GitHub Actions                 | Backend tests and deployment dry runs                     |
 
 The application requests inference through Qdrant. It does not run a model inside the browser or require a separately configured paid embedding API. Availability and usage limits depend on the Qdrant and Cloudflare accounts used for deployment.
 
@@ -132,14 +133,14 @@ When a record is created or edited, its searchable text combines its type, title
 
 The default collection is `alumni_network_v1`.
 
-| Collection setting | Value |
-| --- | --- |
-| Dense vector name | `dense` |
-| Dense dimensions | `384` |
-| Dense distance | Cosine |
-| Sparse vector name | `bm25` |
-| Sparse modifier | IDF |
-| Point identifier | Stable UUID for seeded records; random UUID for admin-created records |
+| Collection setting | Value                                                                 |
+| ------------------ | --------------------------------------------------------------------- |
+| Dense vector name  | `dense`                                                               |
+| Dense dimensions   | `384`                                                                 |
+| Dense distance     | Cosine                                                                |
+| Sparse vector name | `bm25`                                                                |
+| Sparse modifier    | IDF                                                                   |
+| Point identifier   | Stable UUID for seeded records; random UUID for admin-created records |
 
 Each point stores its vectors and a payload. The following is an illustrative payload, not a real student or alumnus record:
 
@@ -166,13 +167,13 @@ Supported record kinds are `alumni`, `job`, `mentorship`, `student`, `department
 
 The original demonstration collection was seeded with **101 records**:
 
-| Category | Records |
-| --- | ---: |
-| Alumni | 50 |
-| Jobs | 20 |
-| Mentoring | 15 |
-| Other original entities | 16 |
-| Total | 101 |
+| Category                | Records |
+| ----------------------- | ------: |
+| Alumni                  |      50 |
+| Jobs                    |      20 |
+| Mentoring               |      15 |
+| Other original entities |      16 |
+| Total                   |     101 |
 
 Of these, 22 entities came from the earlier Neo4j dataset and 79 were synthetic additions. The migrated export contained 33 directed relationships. Counts can change after admin edits or reseeding.
 
@@ -243,12 +244,12 @@ Repeated seeding uses stable IDs and upserts the same seeded points. It does not
 ### 5. Start the complete website
 
 ```sh
-npm exec -- wrangler dev --assets frontend
+npm run dev
 ```
 
-Open the local URL printed by Wrangler. This serves the committed frontend and runs API routes through the Worker.
+Open the local URL printed by Wrangler. The same server serves the frontend and runs the API. Asset configuration is kept directly in `wrangler.jsonc`, so no additional frontend server or generated configuration is required.
 
-For backend-only development, use `npm run dev`. Without an assets binding, the root path returns API information instead of the website.
+On Windows PowerShell, create the local configuration with `Copy-Item .env.example .dev.vars` and edit it with `notepad .dev.vars`.
 
 ### Optional: migrate an existing Neo4j dataset
 
@@ -265,17 +266,17 @@ An existing Neo4j instance is not required to run the synthetic demonstration. D
 
 ## API reference
 
-| Method | Endpoint | Purpose | Access |
-| --- | --- | --- | --- |
-| GET | `/api/health` | Check collection connectivity | Public |
-| GET | `/api/stats` | Read collection and category counts | Public |
-| GET | `/api/facets` | Read available filter values | Public |
-| POST | `/api/search` | Run hybrid search | Public |
-| GET | `/api/records` | Browse up to five records per page | Public |
-| GET | `/api/records/:uuid` | Read a record and its references | Public |
-| POST | `/api/records` | Create and index a record | Admin token |
-| PUT | `/api/records/:uuid` | Replace editable fields and regenerate vectors | Admin token |
-| DELETE | `/api/records/:uuid` | Delete an unconnected record | Admin token |
+| Method | Endpoint             | Purpose                                        | Access      |
+| ------ | -------------------- | ---------------------------------------------- | ----------- |
+| GET    | `/api/health`        | Check collection connectivity                  | Public      |
+| GET    | `/api/stats`         | Read collection and category counts            | Public      |
+| GET    | `/api/facets`        | Read available filter values                   | Public      |
+| POST   | `/api/search`        | Run hybrid search                              | Public      |
+| GET    | `/api/records`       | Browse up to five records per page             | Public      |
+| GET    | `/api/records/:uuid` | Read a record and its references               | Public      |
+| POST   | `/api/records`       | Create and index a record                      | Admin token |
+| PUT    | `/api/records/:uuid` | Replace editable fields and regenerate vectors | Admin token |
+| DELETE | `/api/records/:uuid` | Delete an unconnected record                   | Admin token |
 
 ### Search request
 
@@ -347,25 +348,29 @@ npm exec -- wrangler secret put VECTOR_ADMIN_TOKEN
 Deploy the complete website and API:
 
 ```sh
-npm run deploy:site
+npm run deploy
 ```
 
-This command uploads `frontend/` as Worker assets and binds it as `ASSETS`. API requests still run through the Worker. The generated deployment configuration is temporary.
-
-For an intentionally API-only deployment, use `npm run deploy:api`. Running that command on the same Worker after a full-site deployment removes its frontend assets, so use `deploy:site` when updating the website.
+This command uploads `frontend/` and the Worker together using the single configuration in `wrangler.jsonc`. API routes run through the Worker, and frontend assets are served through its `ASSETS` binding. There is one deployment command for the complete application.
 
 Publishing code to GitHub does not automatically deploy the website. The included GitHub Actions workflow runs checks only.
 
 ## Testing and evaluation
 
-Run the backend tests and deployment check:
+Install Chromium once and run the complete checks:
 
 ```sh
-npm test
-npm run deploy:site -- --dry-run
+npm exec -- playwright install chromium
+npm run check
 ```
 
-The suite contains 13 tests covering migration preservation, demo provenance, hybrid query construction, filters, result limits, transport authentication, metadata preservation and API validation. These checks run on GitHub pushes and pull requests.
+`npm run check` runs 15 backend tests, 9 browser tests and a complete deployment dry run. For individual checks, use `npm test`, `npm run test:ui` or `npm run deploy -- --dry-run`.
+
+Backend tests cover migration preservation, demo provenance, hybrid query construction, filters, result limits, database configuration, record IDs, transport authentication, metadata preservation and API validation.
+
+Browser tests run the actual frontend through Wrangler with controlled API responses. They cover startup, category selection, stale results, failures and retries, loading controls, empty searches, pagination, record details, mobile layout and reduced motion. They do not need database credentials and do not establish live Qdrant connectivity.
+
+GitHub Actions installs Chromium and runs `npm run check` on pushes and pull requests. It does not deploy the website.
 
 After configuring and seeding Qdrant, run:
 
@@ -377,39 +382,52 @@ The evaluator sends ten curated topic queries, checks expected topics in the top
 
 During the original implementation, all ten curated queries returned the intended topic first. The initial median backend time was 168 ms, with a maximum of 622 ms. These are historical measurements from a small developer-selected dataset, not an independent benchmark or a promise about current response time.
 
-Previous integration checks also exercised real Qdrant CRUD operations, authorization and connected-record protection. Browser checks covered search, filters, details, responsive layout, animation controls and reduced-motion behaviour. Private browser scripts and their screenshots are not included in this repository, and GitHub Actions does not run those live checks.
+Previous integration checks also exercised real Qdrant CRUD operations, authorization and connected-record protection. Those checks used a private database and are separate from the repeatable browser tests now included in this repository. CI runs without live credentials.
 
 ## Project structure
 
 ```text
 alumni-vector-database/
-├── .github/workflows/test.yml   # Automated backend checks
-├── .env.example                # Placeholder configuration only
-├── .gitignore                  # Excludes secrets and private generated data
-├── docs/
-│   ├── implementation-plan.md  # Original backend implementation plan
-│   └── verification.md         # Historical validation notes
-├── frontend/
-│   ├── index.html             # Complete website markup
-│   ├── vector.css             # Styling, responsiveness and animations
-│   ├── app.js                 # Search, filters, details and admin interactions
-│   └── fonts/                 # Self-hosted fonts and their license
-├── scripts/
-│   ├── data.js                # Synthetic data and migration mapping
-│   ├── seed.js                # Collection, indexes and point upserts
-│   ├── export-neo4j.js         # Optional private Neo4j export
-│   ├── evaluate.js            # Live retrieval evaluation
-│   └── deploy-site.js         # Deploy frontend assets with the Worker
-├── src/
-│   ├── worker.js              # HTTP routes and admin authorization
-│   ├── qdrant.js              # Qdrant transport and model configuration
-│   └── search.js              # Validation, filters and hybrid search body
-├── tests/                     # Node.js unit tests
+├── frontend/             # Website markup, styles, JavaScript and licensed fonts
+├── src/                  # Worker routes, Qdrant client and search validation
+├── scripts/              # Seed data, evaluation and optional Neo4j export
+├── tests/                # Backend tests and browser regression tests
+├── .github/workflows/    # Automated project checks
+├── .env.example          # Placeholder local configuration
+├── .gitignore
 ├── package.json
 ├── package-lock.json
-├── wrangler.jsonc
-└── README.md
+├── playwright.config.js  # Browser test server and Chromium configuration
+├── wrangler.jsonc        # One configuration for local development and deployment
+└── README.md             # Project explanation, setup and troubleshooting
 ```
+
+The earlier implementation plan, historical verification notes and manual frontend checklist have been consolidated into this README or replaced by automated tests. The custom deployment script is no longer needed because Wrangler handles assets directly. Git history retains both teammates' original contributions.
+
+## Troubleshooting
+
+| Problem                                     | What to check                                                                           |
+| ------------------------------------------- | --------------------------------------------------------------------------------------- |
+| The local website cannot be reached         | Keep `npm run dev` running and use the URL and port printed by Wrangler                 |
+| The website shows Unavailable               | Confirm `.dev.vars` exists and contains the correct cluster URL and database key        |
+| `/api/health` returns 503                   | Check cluster availability, credentials and whether the configured collection exists    |
+| Search returns no records                   | Seed the intended collection, check the selected category and clear restrictive filters |
+| Browser tests cannot launch Chromium        | Run `npm exec -- playwright install chromium`; Linux may also need `--with-deps`        |
+| Unit tests pass but the live database fails | Unit and browser tests do not verify cloud connectivity; check `/api/health` separately |
+
+To check connectivity while the local server is running:
+
+```sh
+curl http://localhost:8787/api/health
+```
+
+On Windows PowerShell:
+
+```powershell
+Invoke-RestMethod http://localhost:8787/api/health
+```
+
+Use the port reported by Wrangler if it differs. Never paste keys into logs, screenshots or issue reports. Before committing, run `npm run check`, `git status` and `git diff --check`.
 
 ## Security and data handling
 
@@ -447,7 +465,6 @@ These are planned ideas, not current features:
 - A larger, independently labelled search evaluation dataset.
 - User feedback on result usefulness.
 - Mentor contact, booking and job application workflows.
-- Automated browser checks in continuous integration.
 - Retrieval tuning and load testing for larger collections.
 
 ## What I learned

@@ -7,4 +7,5 @@ node_modules/
 private/
 dist/
 .DS_Store
-wrangler.local.json
+test-results/
+playwright-report/
